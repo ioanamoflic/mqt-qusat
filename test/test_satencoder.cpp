@@ -7,9 +7,6 @@
 #define localtime_r(a, b) (localtime_s(b, a) == 0 ? b : NULL)
 #endif
 
- #include <omp.h>
-//#include "/opt/homebrew/opt/libomp/include/omp.h" // openmp installed via brew
-
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
@@ -114,14 +111,14 @@ TEST_F(SatEncoderBenchmarking,
        GrowingNrOfQubitsForFixedDepth) { // scaling wrt #qubits
   try {
     // Paper Evaluation:
-    //     std::vector<std::size_t> depths = {10, 50, 250, 1000};
+    // std::vector<std::size_t> depths = {10, 50, 250, 1000};
     std::vector<std::size_t> depths = {10, 50};
     for (unsigned long depth : depths) {
       // 10, 1: 50, 2:  1000, 3: 250
       std::size_t       nrOfQubits = 1U;
       const std::size_t stepsize   = 1U;
       // Paper Evaluation:
-      //       const std::size_t  maxNrOfQubits = 128;
+      // const std::size_t  maxNrOfQubits = 128;
       const std::size_t  maxNrOfQubits = 16;
       std::random_device rd;
       std::ostringstream oss;
@@ -133,11 +130,9 @@ TEST_F(SatEncoderBenchmarking,
 
       std::ofstream outfile(benchmarkFilesPath + "QB-" + std::to_string(depth) +
                             "-" + filename + ".json");
+      outfile << "{ \"benchmarks\" : [";
 
       for (; nrOfQubits < maxNrOfQubits; nrOfQubits += stepsize) {
-        std::ofstream outfile_cirq(benchmarkFilesPath + "cirq-" + std::to_string(depth) +
-                                   "-" + std::to_string(nrOfQubits) + filename + ".txt");
-        outfile_cirq << "[";
         for (size_t j = 0; j < 10;
              j++) { // 10 runs with same params for representative sample
           SatEncoder                satEncoder;
@@ -163,12 +158,12 @@ TEST_F(SatEncoderBenchmarking,
        GrowingCircuitSizeForFixedQubits) { // scaling wrt to circuit size
   try {
     // Paper Evaluation:
-    //         std::vector<std::size_t> qubits = {5, 20, 65, 127};
+    // std::vector<std::size_t> qubits = {5, 20, 65, 127};
     std::vector<std::size_t> qubits = {5, 20};
     for (unsigned long nrOfQubits : qubits) {
       std::size_t depth = 1U;
       // Paper Evaluation:
-      //       std::size_t        maxDepth = 500;
+      // std::size_t        maxDepth = 500;
       std::size_t        maxDepth = 50U;
       const std::size_t  stepsize = 5U;
       std::random_device rd;
@@ -183,12 +178,11 @@ TEST_F(SatEncoderBenchmarking,
                             std::to_string(nrOfQubits) + "-" + filename +
                             ".json");
       outfile << "{ \"benchmarks\" : [";
-
       for (; depth <= maxDepth; depth += stepsize) {
-        for (size_t j = 0; j < 10; j++) { // 10 runs with same params for representative sample
+        for (size_t j = 0; j < 10;
+             j++) { // 10 runs with same params for representative sample
           SatEncoder                satEncoder;
           qc::RandomCliffordCircuit circOne(nrOfQubits, depth, rd());
-
           qc::CircuitOptimizer::flattenOperations(circOne);
           if (depth != 1U || j != 0U) {
             outfile << ", ";
@@ -210,12 +204,12 @@ TEST_F(SatEncoderBenchmarking,
        GrowingCircuitSizeForFixedQubitsGenerators) { // generators wrt circsize
   try {
     // Paper Evaluation:
-    //     std::vector<std::size_t> qubits = {1,2,3};
+    // std::vector<std::size_t> qubits = {1,2,3};
     std::vector<std::size_t> qubits = {2};
     for (unsigned long nrOfQubits : qubits) {
       std::size_t depth = 1U;
       // Paper Evaluation:
-      //       std::size_t        maxDepth = 100;
+      // std::size_t        maxDepth = 100;
       std::size_t        maxDepth = 10U;
       const std::size_t  stepsize = 1U;
       std::random_device rd;
@@ -256,15 +250,13 @@ TEST_F(SatEncoderBenchmarking,
        EquivalenceCheckingGrowingNrOfQubits) { // Equivalence Checking
   try {
     // Paper Evaluation:
-    //     const std::size_t  depth         = 1000;
-    const std::size_t  depth         = 10000;
-
-    //    const std::size_t depth    = 100;
+    // const std::size_t  depth         = 1000;
+    const std::size_t depth    = 100;
     std::size_t       qubitCnt = 4;
     const std::size_t stepsize = 4;
     // Paper Evaluation:
-    const std::size_t  maxNrOfQubits = 100;
-    //    const std::size_t  maxNrOfQubits = 16;
+    // const std::size_t  maxNrOfQubits = 128;
+    const std::size_t  maxNrOfQubits = 16;
     std::random_device rd;
     std::random_device rd2;
     std::random_device rd3;
@@ -284,56 +276,22 @@ TEST_F(SatEncoderBenchmarking,
     auto                                       ipts = getAllCompBasisStates(5);
     std::uniform_int_distribution<std::size_t> distr(0U, 31U);
 
-    #pragma omp parallel for
-    for (qubitCnt=4; qubitCnt < maxNrOfQubits; qubitCnt += stepsize) {
-      const auto nt = omp_get_num_threads(); // this doesn't work on arm64
-      std::cout << "Num threads: " << nt << std::endl;
-
+    for (; qubitCnt < maxNrOfQubits; qubitCnt += stepsize) {
+      std::cout << "Nr Qubits: " << qubitCnt << std::endl;
       SatEncoder               satEncoder;
       std::vector<std::string> inputs;
       for (size_t j = 0; j < 18; j++) {
         inputs.emplace_back(ipts.at(distr(gen2)));
       }
+
       qc::RandomCliffordCircuit circOne(qubitCnt, depth, gen());
       qc::CircuitOptimizer::flattenOperations(circOne);
       auto circTwo = circOne;
       if (qubitCnt != 4) {
         outfile << ", ";
       }
-
       satEncoder.testEqual(circOne, circTwo, inputs); // equivalent case
       outfile << satEncoder.to_json().dump(2U);
-
-      /* ---------- modified ---------- */
-      std::ofstream outfileCirq(benchmarkFilesPath + "Ioana-EC-" +
-                                std::to_string(qubitCnt) + "-" + std::to_string(depth)  +
-                                ".txt");
-      outfileCirq << "[";
-      std::string cirqOperation;
-      for (auto & op : circOne) {
-        if (op->getType() == qc::X && op->getNcontrols() > 0) {
-          const auto control = op->getControls().begin()->qubit;
-          const auto target = op->getTargets()[0];
-          cirqOperation = "cirq.CX.on(q" + std::to_string(control) + ", q" + std::to_string(target) + "), ";
-        } else if (   op->getType() == qc::X
-                   or op->getType() == qc::Y
-                   or op->getType() == qc::Z
-                   or op->getType() == qc::S
-                   or op->getType() == qc::Sdg
-                   or op->getType() == qc::H    )
-        {
-          const auto q = op->getTargets()[0];
-          if (op->getType() != qc::Sdg) {
-            cirqOperation = "cirq.S.on(q" + std::to_string(q) + ")**-1, ";
-          } else {
-            cirqOperation = "cirq." + std::to_string(op->getType()) + ".on(q" + std::to_string(q) + "), ";
-          }
-        }
-        outfileCirq << cirqOperation;
-      }
-      outfileCirq << "]";
-      outfileCirq.close();
-      /* ---------- modified ---------- */
     }
 
     qubitCnt = 4;
