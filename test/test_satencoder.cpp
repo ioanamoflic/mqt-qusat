@@ -7,8 +7,8 @@
 #define localtime_r(a, b) (localtime_s(b, a) == 0 ? b : NULL)
 #endif
 
-// #include <omp.h>
-#include "/opt/homebrew/opt/libomp/include/omp.h" // openmp installed via brew
+ #include <omp.h>
+//#include "/opt/homebrew/opt/libomp/include/omp.h" // openmp installed via brew
 
 #include <filesystem>
 #include <fstream>
@@ -284,8 +284,8 @@ TEST_F(SatEncoderBenchmarking,
     auto                                       ipts = getAllCompBasisStates(5);
     std::uniform_int_distribution<std::size_t> distr(0U, 31U);
 
-#pragma omp parallel for
-    for (; qubitCnt < maxNrOfQubits; qubitCnt += stepsize) {
+    #pragma omp parallel for
+    for (qubitCnt=4; qubitCnt < maxNrOfQubits; qubitCnt += stepsize) {
       const auto nt = omp_get_num_threads(); // this doesn't work on arm64
       std::cout << "Num threads: " << nt << std::endl;
 

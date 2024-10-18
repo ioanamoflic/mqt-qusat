@@ -27,11 +27,7 @@ if(BUILD_MQT_QUSAT_BINDINGS)
           Python 3.8 REQUIRED
           COMPONENTS Interpreter Development.Module
           OPTIONAL_COMPONENTS Development.SABIModule)
-endif()
 
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-  target_link_libraries(MyTarget PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
 # Add path for custom modules
@@ -42,9 +38,19 @@ include(cmake/ExternalDependencies.cmake)
 # add main library code
 add_subdirectory(src)
 
+
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
 # add test code
 if(BUILD_MQT_QUSAT_TESTS)
   enable_testing()
   include(GoogleTest)
   add_subdirectory(test)
+
+  if(OpenMP_CXX_FOUND)
+    target_link_libraries(${PROJECT_NAME}_test PUBLIC OpenMP::OpenMP_CXX)
+  endif()
 endif()
